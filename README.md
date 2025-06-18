@@ -1,5 +1,5 @@
 # Monitor de Lluvias sobre el RÍO LUJAN
-Aplicación comunitaria para visualizar y comparar la lluvia acumulada en distintos sectores de la cuenca del RÍO LUJÁNM
+Aplicación comunitaria para visualizar y comparar la lluvia acumulada en distintos sectores de la cuenca del RÍO LUJÁN
  
 📖 Descripción
 Monitor de Lluvias es una aplicación web que unifica en una sola vista los datos de seis (8) estaciones meteorológicas cada 15' distribuidas a lo largo del RÍO LUJÁN,  permitiendo interpretar en tiempo real dónde llovió más dentro de la cuenca.
