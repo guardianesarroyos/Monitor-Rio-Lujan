@@ -15,7 +15,7 @@ La app fue creada por el colectivo guardianesarroyosba para fortalecer el monito
  
 🧰 Características
 🔁 Consulta dinámica de lluvia acumulada en 24, 48 y 72 horas.
-•	🌐 Seis (8) estaciones meteorológicas sincronizadas cada 15': aguas arriba, zona media, y zona baja.
+•	🌐 Ocho (8) estaciones meteorológicas sincronizadas cada 15': aguas arriba, zona media, y zona baja.
 •	📊 Comparaciones visuales rápidas para interpretar distribución de lluvias. Tooltips de localidades
 •	🔎 Útil para anticipar posibles crecidas al detectar mayores precipitaciones en la cuenca alta.
 •	🎯 Diseño minimalista y responsivo, ideal para celular.
