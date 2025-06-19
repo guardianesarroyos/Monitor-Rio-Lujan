@@ -11,7 +11,7 @@
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Monitor Río Luján - Híbrido/Manual</title>
+    <title>Monitor Río Luján - Tiempo Real</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
       :root {
@@ -98,9 +98,9 @@
       }
       .burbuja span.valor { font-size: 24px; display: block; margin-top: 5px; }
       .burbuja span.temp { font-size: 14px; display: block; color: #ccc; margin-top: 4px; text-align: right; }
-      .alto { top: 15%; border: 2px solid var(--color-alto); }
-      .medio { top: 45%; border: 2px solid var(--color-medio); }
-      .bajo { top: 75%; border: 2px solid var(--color-bajo); }
+      .alto { top: 7%; border: 2px solid var(--color-alto); }
+      .medio { top: 35%; border: 2px solid var(--color-medio); }
+      .bajo { top: 65%; border: 2px solid var(--color-bajo); }
       .info-wrapper { position: relative; float: right; }
       .info-icon { font-size: 18px; color: var(--texto-claro); cursor: pointer; margin-left: 8px; }
       .tooltip-text {
@@ -127,7 +127,7 @@
         text-shadow: 0 1px 3px rgba(0,0,0,0.8);
       }
       .creditos {
-        font-size: 12px;
+        font-size: 22px;
         color: #ccc;
         margin-top: 6px;
       }
@@ -149,7 +149,7 @@
   <div class="contenedor">
     <div class="header">
       <div class="titulo-principal">Monitor Río Luján</div>
-      <div class="subtitulo">Sistema híbrido manual/automático</div>
+      <div class="subtitulo">Monitor de lluvias en tiempo real</div>
     </div>
     <div class="selector-tiempo">
       <button class="active" data-horas="24">24hs</button>
@@ -161,7 +161,10 @@
         CUENCA ALTA
         <div class="info-wrapper">
           <i class="fas fa-info-circle info-icon" data-tooltip="tooltip-alto"></i>
-          <div class="tooltip-text" id="tooltip-alto">Área: Mercedes, Luján, Manzanares</div>
+          <div class="tooltip-text" id="tooltip-alto">
+            <strong>Cuenca Alta:</strong><br>
+            Mercedes, Luján, Manzanares
+          </div>
         </div>
         <span class="valor" id="lluvia-alto">-- mm</span>
         <span class="temp" id="temp-alto">Temp: --°C</span>
@@ -170,7 +173,10 @@
         CUENCA MEDIA
         <div class="info-wrapper">
           <i class="fas fa-info-circle info-icon" data-tooltip="tooltip-medio"></i>
-          <div class="tooltip-text" id="tooltip-medio">Área: Pilar, Zelaya, Campana Delta</div>
+          <div class="tooltip-text" id="tooltip-medio">
+            <strong>Cuenca Media:</strong><br>
+            Pilar, Zelaya, Campana Delta
+          </div>
         </div>
         <span class="valor" id="lluvia-medio">-- mm</span>
         <span class="temp" id="temp-medio">Temp: --°C</span>
@@ -179,7 +185,10 @@
         CUENCA BAJA
         <div class="info-wrapper">
           <i class="fas fa-info-circle info-icon" data-tooltip="tooltip-bajo"></i>
-          <div class="tooltip-text" id="tooltip-bajo">Área: Escobar Puertos, Tigre</div>
+          <div class="tooltip-text" id="tooltip-bajo">
+            <strong>Cuenca Baja:</strong><br>
+            Escobar Puertos, Tigre
+          </div>
         </div>
         <span class="valor" id="lluvia-bajo">-- mm</span>
         <span class="temp" id="temp-bajo">Temp: --°C</span>
@@ -377,8 +386,28 @@
     });
 
     // ===== INICIALIZACIÓN =====
-    actualizarDatos();
-    setInterval(actualizarDatos, config.intervaloActualizacion);
+    document.addEventListener('DOMContentLoaded', function() {
+      // Inicializar tooltips
+      document.querySelectorAll('.info-icon').forEach(icon => {
+        icon.addEventListener('click', function() {
+          const tooltipId = this.getAttribute('data-tooltip');
+          const tooltip = document.getElementById(tooltipId);
+          tooltip.classList.toggle('visible');
+        });
+      });
+
+      // Cerrar tooltips al hacer clic fuera
+      document.addEventListener('click', function(e) {
+        if (!e.target.classList.contains('info-icon')) {
+          document.querySelectorAll('.tooltip-text').forEach(tooltip => {
+            tooltip.classList.remove('visible');
+          });
+        }
+      });
+
+      actualizarDatos();
+      setInterval(actualizarDatos, config.intervaloActualizacion);
+    });
 
     // Helper para datos manuales (sin cambios)
     async function cargarDatosManuales() {
