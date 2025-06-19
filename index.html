@@ -28,7 +28,7 @@
       body {
         margin: 0;
         padding: 0;
-        background: url('rio_lujan.png') no-repeat center center fixed;
+        background: url('rio_lujan.png') no-repeat center center scroll;
         background-size: cover;
         font-family: 'Segoe UI', sans-serif;
         color: var(--texto-claro);
@@ -36,7 +36,7 @@
       }
       .contenedor {
         width: 100%;
-        height: 100vh;
+        min-height: 100vh;
         padding: 20px;
         text-align: center;
         display: flex;
@@ -127,9 +127,16 @@
         text-shadow: 0 1px 3px rgba(0,0,0,0.8);
       }
       .creditos {
-    font-size: 15px;
-    color: #ccc;
-    margin-top: 6px;
+        font-size: 15px;
+        color: #ccc;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        background-color: rgba(0, 0, 0, 0.3);
+        padding: 5px;
+        border-radius: 4px;
+        width: fit-content;
+        margin-left: auto;
+        margin-right: auto;
       }
       /* Switch oculto para Wunderground (activar con Ctrl+Shift+W) */
       .debug-switch {
@@ -142,6 +149,13 @@
         font-size: 10px;
         color: white;
         display: none;
+      }
+
+      @media (max-height: 700px) {
+        .alto { top: 5%; }
+        .medio { top: 30%; }
+        .bajo { top: 55%; }
+        .creditos { margin-top: 5px; margin-bottom: 5px; }
       }
     </style>
 </head>
