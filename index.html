@@ -28,7 +28,7 @@
       body {
         margin: 0;
         padding: 0;
-        background: url('rio_lujan.png') no-repeat center center scroll;
+        background: url('rio_lujan_dia.png') no-repeat center center scroll;
         background-size: cover;
         font-family: 'Segoe UI', sans-serif;
         color: var(--texto-claro);
@@ -224,7 +224,7 @@
       fuenteLluviaPrincipal: 'openmeteo',
       ubicacionSol: { lat: -34.6037, lon: -58.3816 }, // Buenos Aires
       imagenesFondo: {
-        dia: 'rio_lujan.png',
+        dia: 'rio_lujan_dia.png',
         noche: 'rio_lujan_noche.png'
       },
       margenCambioFondo: 20 // minutos antes/después para transición suave
@@ -254,7 +254,7 @@
     const apiKeys = {
       openWeather: 'f4d1c9e95384cf24724a8205aea60940',
       openMeteo: 'https://api.open-meteo.com/v1/forecast',
-      wunderground: '6532d6454b8aa370768e63d6ba5a832e'
+      wunderground: 'TU_API_KEY_WUNDERGROUND'
     };
 
     // ===== SISTEMA DE FONDO DIURNO/NOCTURNO =====
@@ -367,7 +367,7 @@
 
     // ===== SWITCH ENTRE FUENTES =====
     async function obtenerDatosLluvia(area, horas) {
-      if (estadoSistema.usandoWunderground && apiKeys.wunderground !== '6532d6454b8aa370768e63d6ba5a832e') {
+      if (estadoSistema.usandoWunderground && apiKeys.wunderground !== 'TU_API_KEY_WUNDERGROUND') {
         console.log("Usando Wunderground como fuente de lluvia");
         return await obtenerLluviaWunderground(area, horas);
       } else {
