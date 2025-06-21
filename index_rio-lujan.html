@@ -254,7 +254,7 @@
     const apiKeys = {
       openWeather: 'f4d1c9e95384cf24724a8205aea60940',
       openMeteo: 'https://api.open-meteo.com/v1/forecast',
-      wunderground: '6532d6454b8aa370768e63d6ba5a832e'
+      wunderground: 'TU_API_KEY_WUNDERGROUND'
     };
 
     // ===== SISTEMA DE FONDO DIURNO/NOCTURNO =====
@@ -367,7 +367,7 @@
 
     // ===== SWITCH ENTRE FUENTES =====
     async function obtenerDatosLluvia(area, horas) {
-      if (estadoSistema.usandoWunderground && apiKeys.wunderground !== '6532d6454b8aa370768e63d6ba5a832e') {
+      if (estadoSistema.usandoWunderground && apiKeys.wunderground !== 'TU_API_KEY_WUNDERGROUND') {
         console.log("Usando Wunderground como fuente de lluvia");
         return await obtenerLluviaWunderground(area, horas);
       } else {
