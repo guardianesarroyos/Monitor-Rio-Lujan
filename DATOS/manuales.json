@@ -1,7 +1,7 @@
 {
   "ultima_actualizacion": "2025-06-21T15:30:00-03:00",
   "hoy": {
-    "lluvia_alto": "1.0",
+    "lluvia_alto": 1.0,
     "lluvia_medio": "0.2",
     "lluvia_bajo": "0.5"
   },
