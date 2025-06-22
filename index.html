@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <link rel="manifest" href="/manifest.json">
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-1L72EZY8FL"></script>
     <script>
@@ -159,6 +160,18 @@
         .creditos { margin-top: 6px; margin-bottom: 5px; }
       }
     </style>
+    <script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(function (registration) {
+        console.log('ServiceWorker registrado con éxito:', registration.scope);
+      }, function (error) {
+        console.log('ServiceWorker no se pudo registrar:', error);
+      });
+  });
+}
+</script>
 </head>
 <body>
   <div class="contenedor">
