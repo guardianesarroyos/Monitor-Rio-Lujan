@@ -171,7 +171,7 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
-</script>
+    </script>
 </head>
 <body>
   <div class="contenedor">
@@ -243,11 +243,9 @@ if ('serviceWorker' in navigator) {
       margenCambioFondo: 20 // minutos antes/después para transición suave
     };
 
-    // Estado del sistema - AHORA CORRECTO: horariosSol usa la fecha de HOY
+    // Estado del sistema
     function getHorariosSolHoy() {
       const ahora = new Date();
-      // Si quieres hacerlos variables según fecha y latitud, usa una API solar.
-      // Aquí: amanecer 8:00, atardecer 17:50 para la fecha de hoy
       return {
         amanecer: new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 8, 0, 0),
         atardecer: new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 17, 50, 0),
@@ -262,18 +260,18 @@ if ('serviceWorker' in navigator) {
       ultimoFondo: null
     };
 
-    // Áreas geográficas
+    // Áreas geográficas (Pilar actualizado)
     const areas = {
       alto: { lat: -34.651, lon: -59.431 }, // Mercedes
-      medio: { lat: -34.455, lon: -58.859 }, // Pilar
+      medio: { lat: -34.39, lon: -58.89, stationId: "IPILAR44" }, // Pilar (Wunderground)
       bajo: { lat: -34.336, lon: -58.715 }   // Escobar
     };
 
-    // API Keys
+    // API Keys/Endpoints
     const apiKeys = {
       openWeather: 'f4d1c9e95384cf24724a8205aea60940',
       openMeteo: 'https://api.open-meteo.com/v1/forecast',
-      wunderground: 'TU_API_KEY_WUNDERGROUND'
+      wunderground: '6532d6454b8aa370768e63d6ba5a832e'
     };
 
     // ===== SISTEMA DE FONDO DIURNO/NOCTURNO =====
@@ -281,55 +279,27 @@ if ('serviceWorker' in navigator) {
       const ahora = new Date();
       const margenMs = config.margenCambioFondo * 60 * 1000;
 
-      // Si cambia el día, actualizo horariosSol para hoy
       const hoy = ahora.getDate();
       const horariosSolHoy = estadoSistema.horariosSol.amanecer.getDate();
       if (hoy !== horariosSolHoy) {
         estadoSistema.horariosSol = getHorariosSolHoy();
       }
 
-      // Calculamos los límites exactos con margen
       const inicioNoche = new Date(estadoSistema.horariosSol.atardecer.getTime() + margenMs);
       const inicioDia = new Date(estadoSistema.horariosSol.amanecer.getTime() - margenMs);
 
       const esDeNoche = ahora >= inicioNoche || ahora < inicioDia;
       const nuevoFondo = esDeNoche ? config.imagenesFondo.noche : config.imagenesFondo.dia;
 
-      // Solo cambiar si es diferente al fondo actual
       if (estadoSistema.ultimoFondo !== nuevoFondo) {
         document.body.style.backgroundImage = `url('${nuevoFondo}')`;
         estadoSistema.ultimoFondo = nuevoFondo;
-
-        // Registro en consola
-        console.log(`[${ahora.toLocaleTimeString('es-AR', {timeZone: 'America/Argentina/Buenos_Aires'})}] 
-          Fondo cambiado a: ${esDeNoche ? 'Nocturno' : 'Diurno'}
-          Horarios: Amanecer ${estadoSistema.horariosSol.amanecer.toLocaleTimeString('es-AR')} | 
-          Atardecer ${estadoSistema.horariosSol.atardecer.toLocaleTimeString('es-AR')}`);
       }
     }
 
     function iniciarCambioFondoAutomatico() {
-      // Aplicar el fondo correcto al iniciar
       actualizarFondoSegunHora();
-
-      // Verificar cada minuto si necesita cambiar el fondo
       setInterval(actualizarFondoSegunHora, 60 * 1000);
-
-      // Mostrar información en consola
-      console.log('Sistema de fondo diurno/nocturno iniciado');
-      console.log('Configuración actual:');
-      console.log('- Amanecer:', estadoSistema.horariosSol.amanecer.toLocaleTimeString('es-AR', {
-        timeZone: 'America/Argentina/Buenos_Aires',
-        hour: '2-digit',
-        minute: '2-digit'
-      }));
-      console.log('- Atardecer:', estadoSistema.horariosSol.atardecer.toLocaleTimeString('es-AR', {
-        timeZone: 'America/Argentina/Buenos_Aires',
-        hour: '2-digit',
-        minute: '2-digit'
-      }));
-      console.log('- Margen de transición:', config.margenCambioFondo, 'minutos');
-      console.log('- Cambio a nocturno ocurrirá a las 18:10 (17:50 + 20min)');
     }
 
     // ===== FUNCIONES PRINCIPALES =====
@@ -362,7 +332,9 @@ if ('serviceWorker' in navigator) {
           `${apiKeys.openMeteo}?latitude=${area.lat}&longitude=${area.lon}&hourly=precipitation&past_days=3&forecast_days=1`
         );
         const data = await response.json();
-        const horasValidas = data.hourly.precipitation.slice(0, horas);
+        // Tomar las últimas 'horas' de la serie
+        const dataLength = data.hourly.precipitation.length;
+        const horasValidas = data.hourly.precipitation.slice(dataLength - horas);
         const lluviaTotal = horasValidas.reduce((sum, val) => sum + val, 0);
         return lluviaTotal.toFixed(1);
       } catch {
@@ -370,35 +342,49 @@ if ('serviceWorker' in navigator) {
       }
     }
 
-    async function obtenerLluviaWunderground(area, horas) {
+    // ====== Especial: CUENCA MEDIA (Pilar) con Wunderground prioridad ======
+    async function obtenerLluviaWundergroundPilar(horas) {
+      // Consulta a WU para la estación IPILAR44
       try {
-        // Nota: Wunderground requiere formato de fecha YYYYMMDD
+        // Para datos horarios, usamos observations/historical
+        // La API requiere fecha en YYYYMMDD
         const fechaFin = new Date();
         const fechaInicio = new Date();
-        fechaInicio.setDate(fechaFin.getDate() - Math.ceil(horas / 24));
+        fechaInicio.setHours(fechaFin.getHours() - horas);
 
-        const response = await fetch(
-          `https://api.weather.com/v3/wx/observations/historical?apiKey=${apiKeys.wunderground}&geocode=${area.lat},${area.lon}&units=m&startDate=${formatDateWU(fechaInicio)}&endDate=${formatDateWU(fechaFin)}`
-        );
-        const data = await response.json();
-        return data.precipitationTotal?.toFixed(1) || "--";
-      } catch {
-        return "--";
+        // WU API endpoint (v2) - Toma solo el último valor de precipitación acumulada
+        const dateStr = fechaFin.toISOString().split('T')[0].replace(/-/g, '');
+        const url = `https://api.weather.com/v2/pws/observations/current?stationId=IPILAR44&format=json&units=m&apiKey=${apiKeys.wunderground}`;
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error("WU error");
+        const data = await resp.json();
+
+        const obs = data.observations && data.observations[0];
+        if (obs && typeof obs.metric.precipTotal === "number") {
+          // precipTotal: acumulado desde 00:00. Si horas<24, ajusta según timestamp (opcional)
+          return { valor: obs.metric.precipTotal.toFixed(1), fuente: 'wu' };
+        }
+        throw new Error("WU sin datos");
+      } catch (e) {
+        return null; // WU falló
       }
     }
 
-    function formatDateWU(date) {
-      return date.toISOString().split('T')[0].replace(/-/g, '');
-    }
-
-    // ===== SWITCH ENTRE FUENTES =====
-    async function obtenerDatosLluvia(area, horas) {
-      if (estadoSistema.usandoWunderground && apiKeys.wunderground !== 'TU_API_KEY_WUNDERGROUND') {
-        console.log("Usando Wunderground como fuente de lluvia");
-        return await obtenerLluviaWunderground(area, horas);
+    // ===== SWITCH ENTRE FUENTES (escalonado para CUENCA MEDIA) =====
+    async function obtenerDatosLluvia(area, horas, areaNombre) {
+      if (areaNombre === "medio") {
+        // 1° - WU (si responde)
+        const resultadoWu = await obtenerLluviaWundergroundPilar(horas);
+        if (resultadoWu && resultadoWu.valor !== "--") {
+          return { valor: resultadoWu.valor, fuente: resultadoWu.fuente };
+        }
+        // 2° - OpenMeteo (fallback)
+        const om = await obtenerLluviaOpenMeteo(area, horas);
+        return { valor: om, fuente: "om" };
       } else {
-        console.log("Usando Open-Meteo como fuente de lluvia");
-        return await obtenerLluviaOpenMeteo(area, horas);
+        // Para alto y bajo: solo OpenMeteo
+        const om = await obtenerLluviaOpenMeteo(area, horas);
+        return { valor: om, fuente: "om" };
       }
     }
 
@@ -409,7 +395,7 @@ if ('serviceWorker' in navigator) {
         const ahora = new Date();
         const horas = estadoSistema.horasSeleccionadas;
 
-        // Procesar datos manuales (prioridad absoluta)
+        // Datos manuales (si existen y no muy viejos) tienen prioridad absoluta
         if (datosManuales) {
           const fechaManual = new Date(datosManuales.ultima_actualizacion);
           const horasDesdeManual = (ahora - fechaManual) / 3600000;
@@ -436,18 +422,20 @@ if ('serviceWorker' in navigator) {
             document.getElementById('lluvia-medio').textContent = `${lluvias.lluvia_medio} mm`;
             document.getElementById('lluvia-bajo').textContent = `${lluvias.lluvia_bajo} mm`;
             document.getElementById('hora-update').textContent = fechaManual.toLocaleTimeString('es-AR');
+            // No aclaramos fuente (manual) en burbujas
           }
         } else {
-          // Obtener lluvias de APIs
+          // APIs: CUENCA MEDIA con prioridad WU, alto y bajo OpenMeteo
           const [lluviaAlto, lluviaMedio, lluviaBajo] = await Promise.all([
-            obtenerDatosLluvia(areas.alto, horas),
-            obtenerDatosLluvia(areas.medio, horas),
-            obtenerDatosLluvia(areas.bajo, horas)
+            obtenerDatosLluvia(areas.alto, horas, "alto"),
+            obtenerDatosLluvia(areas.medio, horas, "medio"),
+            obtenerDatosLluvia(areas.bajo, horas, "bajo")
           ]);
 
-          document.getElementById('lluvia-alto').textContent = `${lluviaAlto} mm`;
-          document.getElementById('lluvia-medio').textContent = `${lluviaMedio} mm`;
-          document.getElementById('lluvia-bajo').textContent = `${lluviaBajo} mm`;
+          document.getElementById('lluvia-alto').textContent = `${lluviaAlto.valor} mm`;
+          // Muestra (Wu) solo si fuente es wu
+          document.getElementById('lluvia-medio').textContent = `${lluviaMedio.valor} mm${lluviaMedio.fuente === 'wu' ? ' (Wu)' : ''}`;
+          document.getElementById('lluvia-bajo').textContent = `${lluviaBajo.valor} mm`;
           document.getElementById('hora-update').textContent = ahora.toLocaleTimeString('es-AR');
         }
 
