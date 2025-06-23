@@ -395,49 +395,56 @@ if ('serviceWorker' in navigator) {
         const ahora = new Date();
         const horas = estadoSistema.horasSeleccionadas;
 
-        // Datos manuales (si existen y no muy viejos) tienen prioridad absoluta
+        // Obtener siempre los datos automáticos
+        const [lluviaAltoAuto, lluviaMedioAuto, lluviaBajoAuto] = await Promise.all([
+          obtenerDatosLluvia(areas.alto, horas, "alto"),
+          obtenerDatosLluvia(areas.medio, horas, "medio"),
+          obtenerDatosLluvia(areas.bajo, horas, "bajo")
+        ]);
+
+        let usarManuales = false;
+        let lluvias = {};
+
         if (datosManuales) {
-          const fechaManual = new Date(datosManuales.ultima_actualizacion);
-          const horasDesdeManual = (ahora - fechaManual) / 3600000;
-
-          if (horasDesdeManual < 72) {
-            let lluvias;
-            if (horas === 24) {
-              lluvias = datosManuales.hoy;
-            } else if (horas === 48) {
-              lluvias = {
-                lluvia_alto: datosManuales.hoy.lluvia_alto + datosManuales.ayer.lluvia_alto,
-                lluvia_medio: datosManuales.hoy.lluvia_medio + datosManuales.ayer.lluvia_medio,
-                lluvia_bajo: datosManuales.hoy.lluvia_bajo + datosManuales.ayer.lluvia_bajo
-              };
-            } else {
-              lluvias = {
-                lluvia_alto: datosManuales.hoy.lluvia_alto + datosManuales.ayer.lluvia_alto + (datosManuales.antes_de_ayer?.lluvia_alto || 0),
-                lluvia_medio: datosManuales.hoy.lluvia_medio + datosManuales.ayer.lluvia_medio + (datosManuales.antes_de_ayer?.lluvia_medio || 0),
-                lluvia_bajo: datosManuales.hoy.lluvia_bajo + datosManuales.ayer.lluvia_bajo + (datosManuales.antes_de_ayer?.lluvia_bajo || 0)
-              };
-            }
-
-            document.getElementById('lluvia-alto').textContent = `${lluvias.lluvia_alto} mm`;
-            document.getElementById('lluvia-medio').textContent = `${lluvias.lluvia_medio} mm`;
-            document.getElementById('lluvia-bajo').textContent = `${lluvias.lluvia_bajo} mm`;
-            document.getElementById('hora-update').textContent = fechaManual.toLocaleTimeString('es-AR');
-            // No aclaramos fuente (manual) en burbujas
+          let lluviasManuales;
+          if (horas === 24) {
+            lluviasManuales = datosManuales.hoy;
+          } else if (horas === 48) {
+            lluviasManuales = {
+              lluvia_alto: datosManuales.hoy.lluvia_alto + datosManuales.ayer.lluvia_alto,
+              lluvia_medio: datosManuales.hoy.lluvia_medio + datosManuales.ayer.lluvia_medio,
+              lluvia_bajo: datosManuales.hoy.lluvia_bajo + datosManuales.ayer.lluvia_bajo
+            };
+          } else {
+            lluviasManuales = {
+              lluvia_alto: datosManuales.hoy.lluvia_alto + datosManuales.ayer.lluvia_alto + (datosManuales.antes_de_ayer?.lluvia_alto || 0),
+              lluvia_medio: datosManuales.hoy.lluvia_medio + datosManuales.ayer.lluvia_medio + (datosManuales.antes_de_ayer?.lluvia_medio || 0),
+              lluvia_bajo: datosManuales.hoy.lluvia_bajo + datosManuales.ayer.lluvia_bajo + (datosManuales.antes_de_ayer?.lluvia_bajo || 0)
+            };
           }
-        } else {
-          // APIs: CUENCA MEDIA con prioridad WU, alto y bajo OpenMeteo
-          const [lluviaAlto, lluviaMedio, lluviaBajo] = await Promise.all([
-            obtenerDatosLluvia(areas.alto, horas, "alto"),
-            obtenerDatosLluvia(areas.medio, horas, "medio"),
-            obtenerDatosLluvia(areas.bajo, horas, "bajo")
-          ]);
 
-          document.getElementById('lluvia-alto').textContent = `${lluviaAlto.valor} mm`;
-          // Muestra (Wu) solo si fuente es wu
-          document.getElementById('lluvia-medio').textContent = `${lluviaMedio.valor} mm${lluviaMedio.fuente === 'wu' ? ' (Wu)' : ''}`;
-          document.getElementById('lluvia-bajo').textContent = `${lluviaBajo.valor} mm`;
-          document.getElementById('hora-update').textContent = ahora.toLocaleTimeString('es-AR');
+          // Comparar manuales vs automáticos
+          if (
+            parseFloat(lluviasManuales.lluvia_alto) >= parseFloat(lluviaAltoAuto.valor) &&
+            parseFloat(lluviasManuales.lluvia_medio) >= parseFloat(lluviaMedioAuto.valor) &&
+            parseFloat(lluviasManuales.lluvia_bajo) >= parseFloat(lluviaBajoAuto.valor)
+          ) {
+            usarManuales = true;
+            lluvias = lluviasManuales;
+          }
         }
+
+        if (!usarManuales) {
+          lluvias = {
+            lluvia_alto: lluviaAltoAuto.valor,
+            lluvia_medio: lluviaMedioAuto.valor,
+            lluvia_bajo: lluviaBajoAuto.valor
+          };
+        }
+
+        document.getElementById('lluvia-alto').textContent = `${lluvias.lluvia_alto} mm`;
+        document.getElementById('lluvia-medio').textContent = `${lluvias.lluvia_medio} mm${lluviaMedioAuto.fuente === 'wu' && !usarManuales ? ' (Wu)' : ''}`;
+        document.getElementById('lluvia-bajo').textContent = `${lluvias.lluvia_bajo} mm`;
 
         // Temperaturas (siempre de APIs)
         const [tempAlto, tempMedio, tempBajo] = await Promise.all([
@@ -449,6 +456,9 @@ if ('serviceWorker' in navigator) {
         document.getElementById('temp-alto').textContent = `Temp: ${tempAlto}°C`;
         document.getElementById('temp-medio').textContent = `Temp: ${tempMedio}°C`;
         document.getElementById('temp-bajo').textContent = `Temp: ${tempBajo}°C`;
+
+        // SIEMPRE actualiza la hora de actualización al final
+        document.getElementById('hora-update').textContent = ahora.toLocaleTimeString('es-AR');
 
       } catch (e) {
         console.error("Error en actualización:", e);
