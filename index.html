@@ -58,6 +58,38 @@
         margin-bottom: 12px;
         text-shadow: 0 2px 4px rgba(0,0,0,0.8);
       }
+      
+      /* === Widget Lunar === */
+      #moon-widget {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        z-index: 10;
+        display: none;
+        transition: opacity 0.5s ease;
+        opacity: 0;
+        pointer-events: none;
+      }
+      #moon-widget.visible {
+        display: block;
+        opacity: 1;
+      }
+      #moon-title {
+        font-size: 12px;
+        text-transform: lowercase;
+        color: rgba(255,255,255,0.9);
+        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        margin-bottom: 2px;
+      }
+      #moon-image svg {
+        width: 50px;
+        height: 50px;
+        filter: drop-shadow(0 0 5px rgba(0,0,0,0.7));
+      }
+      #moon-image .full-moon {
+        filter: drop-shadow(0 0 8px rgba(255,215,0,0.6)) brightness(1.1);
+      }
+      
       .selector-tiempo {
         margin: 10px 0;
       }
@@ -145,6 +177,16 @@
         .medio { top: 30%; }
         .bajo { top: 55%; }
         .creditos { margin-top: 6px; margin-bottom: 5px; }
+        
+        /* Ajuste lunar para móviles */
+        #moon-widget {
+          top: 10px;
+          left: 10px;
+        }
+        #moon-image svg {
+          width: 40px;
+          height: 40px;
+        }
       }
     </style>
     <script>
@@ -152,7 +194,6 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('/service-worker.js')
       .then(function (registration) {
-        // Forzar actualización inmediata
         if (registration.waiting) {
           registration.waiting.postMessage({ type: 'SKIP_WAITING' });
         }
@@ -180,6 +221,13 @@ if ('serviceWorker' in navigator) {
       <div class="titulo-principal">Monitor Río Luján</div>
       <div class="subtitulo">Monitor de lluvias en tiempo real</div>
     </div>
+    
+    <!-- Widget Lunar -->
+    <div id="moon-widget">
+      <div id="moon-title"></div>
+      <div id="moon-image"></div>
+    </div>
+    
     <div class="selector-tiempo">
       <button class="active" data-horas="24">24hs</button>
       <button data-horas="48">48hs</button>
@@ -227,6 +275,77 @@ if ('serviceWorker' in navigator) {
   </div>
 
   <script>
+    // ===== SISTEMA LUNAR =====
+    function getMoonPhase(date = new Date()) {
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const day = date.getDate();
+      
+      const c = Math.floor(year / 100);
+      const e = 2 - c + Math.floor(c / 4);
+      const jd = Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day + e - 1524.5;
+      let age = (jd - 2451550.1) / 29.530588853;
+      age = age - Math.floor(age);
+      if (age < 0) age += 1;
+      age *= 29.53;
+
+      let phase;
+      if (age < 1.84566) phase = "nueva";
+      else if (age < 5.53699) phase = "creciente";
+      else if (age < 9.22831) phase = "cuarto creciente";
+      else if (age < 12.91963) phase = "gibosa creciente";
+      else if (age < 16.61096) phase = "llena";
+      else if (age < 20.30228) phase = "gibosa menguante";
+      else if (age < 23.99361) phase = "cuarto menguante";
+      else phase = "menguante";
+
+      const isFull = phase === "llena";
+      const moonColor = isFull ? "#FFF8E7" : "#F8F8FF";
+      
+      const svg = `
+        <svg viewBox="0 0 100 100" class="${isFull ? 'full-moon' : ''}">
+          <circle cx="50" cy="50" r="48" fill="${moonColor}" />
+          <path d="${getMoonPath(age)}" fill="#333333" />
+        </svg>
+      `;
+
+      return { phase, svg };
+    }
+
+    function getMoonPath(age) {
+      const rad = 48;
+      const center = 50;
+      const waxing = age < 14.765;
+      
+      let d = "";
+      const steps = 36;
+      for (let i = 0; i <= steps; i++) {
+        const angle = (i * Math.PI * 2) / steps;
+        const x = center + Math.cos(angle) * rad;
+        const y = center + Math.sin(angle) * rad;
+        
+        const phaseAngle = (age / 29.53) * Math.PI * 2;
+        const shade = waxing 
+          ? Math.cos(angle - phaseAngle) * rad
+          : Math.cos(angle + phaseAngle) * rad;
+
+        if (i === 0) d += `M ${x} ${y}`;
+        else d += ` L ${x} ${y}`;
+
+        if ((waxing && shade > 0) || (!waxing && shade < 0)) {
+          const shadeX = center + Math.cos(angle) * (rad - Math.abs(shade));
+          d += ` L ${shadeX} ${y}`;
+        }
+      }
+      return d + " Z";
+    }
+
+    function updateMoonWidget() {
+      const { phase, svg } = getMoonPhase();
+      document.getElementById('moon-title').textContent = phase;
+      document.getElementById('moon-image').innerHTML = svg;
+    }
+
     // Configuración
     const config = {
       intervaloActualizacion: 15 * 60 * 1000, // 15 minutos
@@ -289,6 +408,13 @@ if ('serviceWorker' in navigator) {
       if (estadoSistema.ultimoFondo !== nuevoFondo) {
         document.body.style.backgroundImage = `url('${nuevoFondo}')`;
         estadoSistema.ultimoFondo = nuevoFondo;
+        
+        // Mostrar/ocultar luna
+        const moonWidget = document.getElementById('moon-widget');
+        if (moonWidget) {
+          moonWidget.classList.toggle('visible', esDeNoche);
+          if (esDeNoche) updateMoonWidget();
+        }
       }
     }
 
@@ -300,7 +426,6 @@ if ('serviceWorker' in navigator) {
     // ===== FUNCIONES PRINCIPALES =====
     async function obtenerTemperatura(area) {
       try {
-        // Solo Open-Meteo
         const omResponse = await fetch(`${apiKeys.openMeteo}?latitude=${area.lat}&longitude=${area.lon}&current=temperature_2m`);
         if (omResponse.ok) {
           const data = await omResponse.json();
@@ -319,7 +444,6 @@ if ('serviceWorker' in navigator) {
           `${apiKeys.openMeteo}?latitude=${area.lat}&longitude=${area.lon}&hourly=precipitation&past_days=3&forecast_days=1`
         );
         const data = await response.json();
-        // Tomar las últimas 'horas' de la serie
         const dataLength = data.hourly.precipitation.length;
         const horasValidas = data.hourly.precipitation.slice(dataLength - horas);
         const lluviaTotal = horasValidas.reduce((sum, val) => sum + val, 0);
@@ -329,7 +453,6 @@ if ('serviceWorker' in navigator) {
       }
     }
 
-    // ====== Especial: CUENCA MEDIA (Pilar) con Wunderground prioridad ======
     async function obtenerLluviaWundergroundPilar(horas) {
       try {
         const fechaFin = new Date();
@@ -352,7 +475,6 @@ if ('serviceWorker' in navigator) {
       }
     }
 
-    // ===== SWITCH ENTRE FUENTES (escalonado para CUENCA MEDIA) =====
     async function obtenerDatosLluvia(area, horas, areaNombre) {
       if (areaNombre === "medio") {
         const resultadoWu = await obtenerLluviaWundergroundPilar(horas);
@@ -367,7 +489,6 @@ if ('serviceWorker' in navigator) {
       }
     }
 
-    // ===== ACTUALIZACIÓN PRINCIPAL =====
     async function actualizarDatos() {
       try {
         const datosManuales = await cargarDatosManuales();
