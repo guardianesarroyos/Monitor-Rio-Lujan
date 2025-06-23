@@ -1,17 +1,20 @@
-const CACHE_NAME = "monitor-lujan-cache-v1";
+const CACHE_NAME = 'monitor-rio-lujan-v2';
 const urlsToCache = [
-  "/",
-  "/index.html",
-  "/manifest.json",
-  "/icon-192.png",
-  "/icon-512.png"
-  // Agrega aquí otros archivos esenciales (CSS, JS, imágenes, etc.)
+  '/',
+  '/index.html',
+  '/rio_lujan_dia.png',
+  '/rio_lujan_noche.png',
+  '/manifest.json',
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
+  // Agrega aquí otros recursos necesarios
 ];
 
-self.addEventListener("install", event => {
+self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
+      .then(function(cache) {
+        return cache.addAll(urlsToCache);
+      })
   );
 });
 

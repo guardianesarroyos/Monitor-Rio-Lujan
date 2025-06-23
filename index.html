@@ -165,6 +165,20 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('/service-worker.js')
       .then(function (registration) {
+        // Forzar actualización inmediata
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+        registration.onupdatefound = function () {
+          const installingWorker = registration.installing;
+          installingWorker.onstatechange = function () {
+            if (installingWorker.state === 'installed') {
+              if (navigator.serviceWorker.controller) {
+                window.location.reload();
+              }
+            }
+          };
+        };
         console.log('ServiceWorker registrado con éxito:', registration.scope);
       }, function (error) {
         console.log('ServiceWorker no se pudo registrar:', error);
