@@ -214,6 +214,7 @@ if ('serviceWorker' in navigator) {
   });
 }
     </script>
+    <script src="config.js"></script>
 </head>
 <body>
   <div class="contenedor">
@@ -460,7 +461,7 @@ if ('serviceWorker' in navigator) {
         fechaInicio.setHours(fechaFin.getHours() - horas);
 
         const dateStr = fechaFin.toISOString().split('T')[0].replace(/-/g, '');
-        const url = `https://api.weather.com/v2/pws/observations/current?stationId=IPILAR44&format=json&units=m&apiKey=${apiKeys.wunderground}`;
+        const url = `https://api.weather.com/v2/pws/observations/current?stationId=IPILAR44&format=json&units=m&apiKey=${window.WUNDERGROUND_KEY}`;
         const resp = await fetch(url);
         if (!resp.ok) throw new Error("WU error");
         const data = await resp.json();
