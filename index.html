@@ -385,8 +385,8 @@ if ('serviceWorker' in navigator) {
 
     // API Keys/Endpoints
     const apiKeys = {
-      openMeteo: 'https://api.open-meteo.com/v1/forecast',
-      wunderground: '6532d6454b8aa370768e63d6ba5a832e'
+      openMeteo: 'https://api.open-meteo.com/v1/forecast'
+      // La clave de Wunderground ya NO debe estar aquí
     };
 
     // ===== SISTEMA DE FONDO DIURNO/NOCTURNO =====
@@ -461,6 +461,7 @@ if ('serviceWorker' in navigator) {
         fechaInicio.setHours(fechaFin.getHours() - horas);
 
         const dateStr = fechaFin.toISOString().split('T')[0].replace(/-/g, '');
+        // Usa la variable global definida en config.js
         const url = `https://api.weather.com/v2/pws/observations/current?stationId=IPILAR44&format=json&units=m&apiKey=${window.WUNDERGROUND_KEY}`;
         const resp = await fetch(url);
         if (!resp.ok) throw new Error("WU error");
